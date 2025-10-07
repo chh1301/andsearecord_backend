@@ -1,7 +1,7 @@
 package com.chh.asexam.service;
 
-import com.chh.asexam.model.entity.PostThumb;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.chh.asexam.model.entity.PostThumb;
 import com.chh.asexam.model.entity.User;
 
 /**

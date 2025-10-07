@@ -13,10 +13,11 @@ import com.chh.asexam.model.entity.PostFavour;
 import com.chh.asexam.model.entity.User;
 import com.chh.asexam.service.PostFavourService;
 import com.chh.asexam.service.PostService;
-import javax.annotation.Resource;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.Resource;
 
 /**
  * 帖子收藏服务实现

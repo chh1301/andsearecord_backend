@@ -10,10 +10,11 @@ import com.chh.asexam.model.entity.PostThumb;
 import com.chh.asexam.model.entity.User;
 import com.chh.asexam.service.PostService;
 import com.chh.asexam.service.PostThumbService;
-import javax.annotation.Resource;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.Resource;
 
 /**
  * 帖子点赞服务实现

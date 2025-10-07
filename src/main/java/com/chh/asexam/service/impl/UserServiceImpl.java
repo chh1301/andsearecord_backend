@@ -1,7 +1,5 @@
 package com.chh.asexam.service.impl;
 
-import static com.chh.asexam.constant.UserConstant.USER_LOGIN_STATE;
-
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -16,15 +14,18 @@ import com.chh.asexam.model.vo.LoginUserVO;
 import com.chh.asexam.model.vo.UserVO;
 import com.chh.asexam.service.UserService;
 import com.chh.asexam.utils.SqlUtils;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.chh.asexam.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户服务实现
