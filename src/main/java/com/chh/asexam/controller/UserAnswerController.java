@@ -14,9 +14,13 @@ import com.chh.asexam.model.dto.useranswer.UserAnswerAddRequest;
 import com.chh.asexam.model.dto.useranswer.UserAnswerEditRequest;
 import com.chh.asexam.model.dto.useranswer.UserAnswerQueryRequest;
 import com.chh.asexam.model.dto.useranswer.UserAnswerUpdateRequest;
-import com.chh.asexam.model.entity.UserAnswer;
+import com.chh.asexam.model.entity.App;
 import com.chh.asexam.model.entity.User;
+import com.chh.asexam.model.entity.UserAnswer;
+import com.chh.asexam.model.enums.ReviewStatusEnum;
 import com.chh.asexam.model.vo.UserAnswerVO;
+import com.chh.asexam.scoring.ScoringStrategyExecutor;
+import com.chh.asexam.service.AppService;
 import com.chh.asexam.service.UserAnswerService;
 import com.chh.asexam.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +48,12 @@ public class UserAnswerController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private AppService appService;
+
+    @Resource
+    ScoringStrategyExecutor scoringStrategyExecutor;
+
     // region 增删改查
 
     /**
@@ -60,9 +70,16 @@ public class UserAnswerController {
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerAddRequest, userAnswer);
         List<String> choices = userAnswerAddRequest.getChoices();
-        userAnswer.setChoices(JSONUtil.toJsonStr( choices));
+        userAnswer.setChoices(JSONUtil.toJsonStr(choices));
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, true);
+        // 判断app是否存在
+        App app = appService.getById(userAnswer.getAppId());
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        // 题目审核未通过禁止答题
+        if (!ReviewStatusEnum.REVIEWING.equals(ReviewStatusEnum.getEnumByValue(app.getReviewStatus()))) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "题目审核未通过,禁止答题");
+        }
         // 填充默认值
         User loginUser = userService.getLoginUser(request);
         userAnswer.setUserId(loginUser.getId());
@@ -71,6 +88,15 @@ public class UserAnswerController {
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         // 返回新写入的数据 id
         long newUserAnswerId = userAnswer.getId();
+        // 调用评分模块
+        try {
+            UserAnswer userAnswerResult = scoringStrategyExecutor.doScore(choices, app);
+            userAnswer.setId(newUserAnswerId);
+            userAnswerService.updateById(userAnswerResult);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "评分错误");
+        }
         return ResultUtils.success(newUserAnswerId);
     }
 
@@ -117,7 +143,7 @@ public class UserAnswerController {
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerUpdateRequest, userAnswer);
         List<String> choices = userAnswerUpdateRequest.getChoices();
-        userAnswer.setChoices(JSONUtil.toJsonStr( choices));
+        userAnswer.setChoices(JSONUtil.toJsonStr(choices));
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, false);
         // 判断是否存在
@@ -172,7 +198,7 @@ public class UserAnswerController {
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<UserAnswerVO>> listUserAnswerVOByPage(@RequestBody UserAnswerQueryRequest userAnswerQueryRequest,
-                                                               HttpServletRequest request) {
+                                                                   HttpServletRequest request) {
         long current = userAnswerQueryRequest.getCurrent();
         long size = userAnswerQueryRequest.getPageSize();
         // 限制爬虫
@@ -193,7 +219,7 @@ public class UserAnswerController {
      */
     @PostMapping("/my/list/page/vo")
     public BaseResponse<Page<UserAnswerVO>> listMyUserAnswerVOByPage(@RequestBody UserAnswerQueryRequest userAnswerQueryRequest,
-                                                                 HttpServletRequest request) {
+                                                                     HttpServletRequest request) {
         ThrowUtils.throwIf(userAnswerQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 补充查询条件，只查询当前登录用户的数据
         User loginUser = userService.getLoginUser(request);
@@ -225,7 +251,7 @@ public class UserAnswerController {
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerEditRequest, userAnswer);
         List<String> choices = userAnswerEditRequest.getChoices();
-        userAnswer.setChoices(JSONUtil.toJsonStr( choices));
+        userAnswer.setChoices(JSONUtil.toJsonStr(choices));
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, false);
         User loginUser = userService.getLoginUser(request);
